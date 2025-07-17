@@ -5,6 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.joget.apps.form.lib.CustomHTML;
+import org.joget.apps.form.lib.TextField;
 import org.joget.apps.form.model.*;
 import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.LogUtil;
@@ -28,12 +29,12 @@ public class DynamicCustomHTML extends CustomHTML {
 
     @Override
     public String getDescription() {
-        return "Replaces {tokens} using form-level Load Binder data.";
+        return "Replaces {tokens} using form data.";
     }
 
     @Override
     public String getVersion() {
-        return "8.0.0";
+        return "8.0.1";
     }
 
     @Override
@@ -43,41 +44,28 @@ public class DynamicCustomHTML extends CustomHTML {
             if (rawHtml == null || rawHtml.isEmpty()) {
                 return super.renderTemplate(formData, dataModel);
             }
-            FormLoadBinder binder = FormUtil.findLoadBinder(this);
-            if (binder == null) {
-                Element root = FormUtil.findRootForm(this);
-                if (root != null && root.getLoadBinder() instanceof FormLoadBinder) {
-                    binder = (FormLoadBinder) root.getLoadBinder();
-                } else {
-                    return super.renderTemplate(formData, dataModel);
-                }
+            Matcher matcher = Pattern.compile("\\{([A-Za-z0-9_]+)}").matcher(rawHtml);
+            StringBuffer result = new StringBuffer();
+
+            while (matcher.find()) {
+                String token = matcher.group(1);
+
+                Element dummyField = new TextField();
+                dummyField.setProperty("id", token);
+                dummyField.setParent(this);
+
+                String value = FormUtil.getElementPropertyValue(dummyField, formData);
+                value = (value != null) ? StringEscapeUtils.escapeHtml(value) : "";
+
+                matcher.appendReplacement(result, Matcher.quoteReplacement(value));
             }
-            FormRowSet rows = binder.load(this, formData.getPrimaryKeyValue(), formData);
-            if (rows != null && !rows.isEmpty()) {
-                int index = 0;
-                for (FormRow rowItem : rows) {
-                    for (Map.Entry<Object, Object> entry : rowItem.entrySet()) {
-                        String key = entry.getKey().toString();
-                        String value = (entry.getValue() != null) ? entry.getValue().toString() : "null";
-                    }
-                }
-                FormRow row = rows.get(0);
-                Matcher matcher = Pattern.compile("\\{([A-Za-z0-9_]+)}").matcher(rawHtml);
-                StringBuffer result = new StringBuffer();
+            matcher.appendTail(result);
 
-                while (matcher.find()) {
-                    String token = matcher.group(1);
-                    String value = row.getProperty(token);
+            setProperty("value", result.toString());
+            String finalHtml = super.renderTemplate(formData, dataModel);
+            setProperty("value", rawHtml); // Restore original HTML
+            return finalHtml;
 
-                    matcher.appendReplacement(result, Matcher.quoteReplacement(StringEscapeUtils.escapeHtml(value)));
-                }
-                matcher.appendTail(result);
-
-                setProperty("value", result.toString());
-                String finalHtml = super.renderTemplate(formData, dataModel);
-                setProperty("value", rawHtml); // restore original
-                return finalHtml;
-            } 
         } catch (Exception e) {
             LogUtil.error(getClassName(), e, "Exception during token replacement.");
         }
