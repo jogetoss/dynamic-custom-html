@@ -6,11 +6,15 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.joget.apps.form.lib.CustomHTML;
 import org.joget.apps.form.lib.TextField;
-import org.joget.apps.form.model.*;
+import org.joget.apps.form.model.Element;
+import org.joget.apps.form.model.FormData;
 import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.LogUtil;
+import org.joget.commons.util.StringUtil;
 
 public class DynamicCustomHTML extends CustomHTML {
+
+    static final Pattern TOKEN_PATTERN = Pattern.compile("\\{([A-Za-z0-9_]+)(\\?[^{}]+)?}");
 
     @Override
     public String getName() {
@@ -29,12 +33,12 @@ public class DynamicCustomHTML extends CustomHTML {
 
     @Override
     public String getDescription() {
-        return "Replaces {tokens} using form data.";
+        return "Replaces {tokens} using form data. Supports optional escape formats, e.g. {fieldId?nl2br}, {fieldId?html}, {fieldId?nl2br;html} — see Joget's Hash Variable escaping formats for the full list.";
     }
 
     @Override
     public String getVersion() {
-        return "8.0.1";
+        return "8.0.2-HUGO";
     }
 
     @Override
@@ -44,18 +48,22 @@ public class DynamicCustomHTML extends CustomHTML {
             if (rawHtml == null || rawHtml.isEmpty()) {
                 return super.renderTemplate(formData, dataModel);
             }
-            Matcher matcher = Pattern.compile("\\{([A-Za-z0-9_]+)}").matcher(rawHtml);
+            Matcher matcher = TOKEN_PATTERN.matcher(rawHtml);
             StringBuffer result = new StringBuffer();
 
             while (matcher.find()) {
                 String token = matcher.group(1);
+                String format = matcher.group(2);
 
                 Element dummyField = new TextField();
                 dummyField.setProperty("id", token);
                 dummyField.setParent(this);
 
                 String value = FormUtil.getElementPropertyValue(dummyField, formData);
-                value = (value != null) ? StringEscapeUtils.escapeHtml(value) : "";
+
+                if (format != null && value != null) {
+                    value = StringUtil.escapeString(value, format.substring(1));
+                }
 
                 matcher.appendReplacement(result, Matcher.quoteReplacement(value));
             }
