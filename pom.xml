@@ -6,7 +6,7 @@
 
     <groupId>org.joget.marketplace</groupId>
     <artifactId>dynamic-custom-html</artifactId>
-    <version>8.0.1</version>
+    <version>8.0.0</version>
     <packaging>bundle</packaging>
     <name>dynamic-custom-html</name>
     <url>http://www.joget.org</url>

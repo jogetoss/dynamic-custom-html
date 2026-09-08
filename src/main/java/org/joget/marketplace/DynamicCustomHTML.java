@@ -38,7 +38,7 @@ public class DynamicCustomHTML extends CustomHTML {
 
     @Override
     public String getVersion() {
-        return "8.0.2-HUGO";
+        return "8.0.0";
     }
 
     @Override
