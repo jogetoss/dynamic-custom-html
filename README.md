@@ -1,6 +1,8 @@
 # Description
 
-This repository is meant to serve as a general template for how to set up new repositories in the JogetOSS organization. 
+This plugin extends the standard Custom HTML form element, allowing data to be inserted into HTML using {token} placeholders that pull values from form Load Binders. Optional suffixes like {fieldId?html} control how values are escaped or formatted. It eliminates the need for custom JavaScript or BeanShell code to inject database values into HTML layouts.
+
+To setup and configure this plugin, please see the [documentation](https://kb.joget.org/jw/web/userview/jdocs/docs/marketplace/dynamic-custom-html).
 
 # Getting Help
 
